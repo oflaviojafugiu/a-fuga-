@@ -150,6 +150,17 @@
   footer .faixa { display: inline-flex; height: 6px; width: 120px; border-radius: 999px; overflow: hidden; margin-bottom: 12px; }
   footer .faixa span { flex: 1; }
 
+  /* Contador de visitantes */
+  .visitas {
+    display: inline-flex; align-items: center; gap: 10px; margin-top: 28px;
+    background: var(--branco); color: var(--azul);
+    padding: 10px 18px; border-radius: 999px;
+    box-shadow: 0 4px 0 var(--amarelo), 0 12px 30px rgba(0,0,0,.2);
+    font-weight: 600; font-size: .95rem;
+  }
+  .visitas[hidden] { display: none; }
+  .visitas b { font-family: 'Archivo Black', sans-serif; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+
   @media (max-width: 520px) {
     .contagem { gap: 8px; }
     .bloco { border-radius: 14px; padding: 14px 4px 10px; }
@@ -192,6 +203,8 @@
     </div>
 
     <p class="data-alvo" id="data-alvo"></p>
+
+    <div class="visitas" id="visitas" hidden>👀 <span><b id="num-visitas">—</b> brasileiros já vieram conferir</span></div>
 
     <section class="comemoracao" aria-label="Comemoração">
       <div class="titulo-festa">🇧🇷 SIM! ELE FUGIU! 🎉</div>
@@ -301,6 +314,24 @@
 
   atualizar();
   setInterval(atualizar, 1000);
+
+  /* Contador de visitantes (Abacus — gratuito, sem cadastro).
+     Conta cada navegador uma vez só; nas visitas seguintes apenas lê o total. */
+  (async function contarVisita() {
+    const base = "https://abacus.jasoncameron.dev";
+    const chave = "oflaviojafugiu/visitantes";
+    let jaContado = false;
+    try { jaContado = localStorage.getItem("ofjf-visitou") === "1"; } catch (e) {}
+    try {
+      const r = await fetch(`${base}/${jaContado ? "get" : "hit"}/${chave}`);
+      if (!r.ok) return;
+      const { value } = await r.json();
+      if (typeof value !== "number") return;
+      if (!jaContado) { try { localStorage.setItem("ofjf-visitou", "1"); } catch (e) {} }
+      $("num-visitas").textContent = value.toLocaleString("pt-BR");
+      $("visitas").hidden = false;
+    } catch (e) { /* se o serviço cair, o contador simplesmente não aparece */ }
+  })();
 </script>
 </body>
 </html>
