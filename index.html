@@ -127,7 +127,11 @@
   /* Estado: FUGIU */
   .comemoracao { display: none; flex-direction: column; align-items: center; gap: 20px; margin-top: 12px; }
   body.fugiu .comemoracao { display: flex; }
-  body.fugiu .contagem, body.fugiu .progresso, body.fugiu .data-alvo { display: none; }
+  body.fugiu .progresso, body.fugiu .data-alvo { display: none; }
+  body.fugiu .contagem { margin-top: 20px; }
+  .fonte { font-size: .85rem; opacity: .85; }
+  .fonte a { color: var(--amarelo); }
+  .banner-festa svg { width: 70%; height: auto; }
   body.fugiu .globo .resposta { background: var(--amarelo); }
   .comemoracao img {
     width: 100%; max-width: 560px; border-radius: 20px;
@@ -189,7 +193,6 @@
     92% { transform: translateY(-50%) rotate(2deg); }
     95% { transform: translateY(-50%) rotate(-1deg); }
   }
-  body.fugiu .alerta { display: none; }
 
   /* Em telas menores o banner vira uma faixa no topo */
   @media (max-width: 1100px) {
@@ -220,7 +223,7 @@
   <div class="losango" aria-hidden="true"></div>
 
   <aside class="alerta" role="status" aria-label="Alerta de última hora">
-    <span class="tag"><i></i> Urgente</span>
+    <span class="tag"><i></i> Confirmado</span>
     <svg viewBox="0 0 160 150" role="img" aria-label="Galinha">
       <!-- chão -->
       <ellipse cx="80" cy="140" rx="52" ry="6" fill="rgba(0,0,0,.18)"/>
@@ -251,8 +254,8 @@
       <!-- gotinha de suor -->
       <path d="M108 26 C104 32 104 36 108 36 C112 36 112 32 108 26 Z" fill="#9AD0FF"/>
     </svg>
-    <h2>Possível fuga pela Argentina</h2>
-    <p>Atualizações em instantes<span class="reticencias"></span></p>
+    <h2>Fuga confirmada</h2>
+    <p>Galinha em fuga rumo aos EUA ✈️</p>
   </aside>
 
   <main>
@@ -288,11 +291,12 @@
     <div class="visitas" id="visitas" hidden>👀 <span><b id="num-visitas">—</b> brasileiros já vieram conferir</span></div>
 
     <section class="comemoracao" aria-label="Comemoração">
-      <div class="titulo-festa">🇧🇷 SIM! ELE FUGIU! 🎉</div>
+      <div class="titulo-festa">🇧🇷 ELE JÁ FUGIU! 🐔💨</div>
       <!-- A imagem aparece se existir; senão mostra o banner de emoji -->
       <img id="img-festa" alt="Comemoração" hidden>
       <div class="banner-festa" id="banner-festa">🎉🥳🎊</div>
       <p class="sub" id="desde"></p>
+      <p class="fonte">Fonte: <a href="https://www.metropoles.com/colunas/grande-angular/flavio-bolsonaro-foi-embora-para-os-eua-aviao-em-voo" target="_blank" rel="noopener">Metrópoles, coluna Grande Angular (27/10/2026)</a></p>
     </section>
   </main>
 
@@ -313,7 +317,11 @@
     dataInicio: "2026-10-26T00:00:00-03:00",
 
     // Mude para true quando ele sair de verdade (mesmo antes da data)
-    jaFugiu: false,
+    jaFugiu: true,
+
+    // Cronômetro da fuga: do resultado das urnas até a fuga confirmada
+    inicioFuga: "2026-10-25T22:00:00-03:00",
+    momentoFuga: "2026-10-27T13:41:00-03:00",
 
     // Imagem de comemoração (coloque o arquivo na mesma pasta do index.html)
     imagemComemoracao: "comemoracao.jpg"
@@ -335,9 +343,26 @@
     if (comemorando) return;
     comemorando = true;
     document.body.classList.add("fugiu");
-    $("resposta").textContent = "SIM!";
-    $("sub").innerHTML = "Ele <strong>finalmente</strong> saiu do Brasil.";
-    document.title = "SIM! O Flávio Já Fugiu! 🎉";
+    $("resposta").textContent = "JÁ FUGIU!";
+    document.title = "O Flávio Já Fugiu! 🐔💨";
+
+    // Galinha em fuga no lugar do banner de emojis
+    const galinha = document.querySelector(".alerta svg");
+    if (galinha) $("banner-festa").innerHTML = galinha.outerHTML;
+
+    // Cronômetro congelado: quanto tempo levou a fuga
+    const dur = Math.max(0, new Date(CONFIG.momentoFuga) - new Date(CONFIG.inicioFuga));
+    const d = Math.floor(dur / 86400000), h = Math.floor(dur / 3600000) % 24, m = Math.floor(dur / 60000) % 60, s = Math.floor(dur / 1000) % 60;
+    $("dias").textContent = d;
+    $("horas").textContent = pad(h);
+    $("minutos").textContent = pad(m);
+    $("segundos").textContent = pad(s);
+    const partes = [];
+    if (d) partes.push(`${d} dia${d > 1 ? "s" : ""}`);
+    if (h) partes.push(`${h} hora${h > 1 ? "s" : ""}`);
+    if (m) partes.push(`${m} minuto${m > 1 ? "s" : ""}`);
+    const texto = partes.length > 1 ? partes.slice(0, -1).join(", ") + " e " + partes.at(-1) : (partes[0] || "0 minutos");
+    $("sub").innerHTML = `Levou <strong>${texto}</strong> do resultado das urnas (25/10, 22h) até a fuga.`;
 
     const img = $("img-festa");
     img.onload = () => { img.hidden = false; $("banner-festa").style.display = "none"; };
@@ -370,10 +395,7 @@
 
     if (CONFIG.jaFugiu || resta <= 0) {
       comemorar();
-      const passou = Math.floor(Math.max(0, agora - alvo) / 86400000);
-      $("desde").textContent = CONFIG.jaFugiu && resta > 0
-        ? "Saiu antes do previsto! 🏃‍♂️💨"
-        : (passou === 0 ? "Aconteceu hoje!" : `Já faz ${passou} dia${passou > 1 ? "s" : ""}.`);
+      $("desde").textContent = resta > 0 ? "Saiu antes do previsto! 🏃‍♂️💨" : "";
       return;
     }
 
